@@ -1,1 +1,0 @@
-# devinminnaard.github.io
