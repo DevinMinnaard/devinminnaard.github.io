@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brandon Minnaard — Filmmaker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Bebas+Neue&family=Montserrat:wght@300;400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --cream: #f0ebe1;
+      --charcoal: #0e0d0c;
+      --gold: #c9a84c;
+      --warm-grey: #7a7570;
+      --off-white: #e8e2d9;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--charcoal);
+      color: var(--cream);
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 300;
+      overflow-x: hidden;
+    }
+
+    /* ── PAGE SYSTEM ── */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      padding: 2rem 6vw;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background 0.4s, padding 0.4s;
+    }
+    nav.scrolled {
+      background: rgba(11,10,10,0.88);
+      backdrop-filter: blur(14px);
+      padding: 1.2rem 6vw;
+    }
+    .nav-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem;
+      letter-spacing: 0.1em;
+      color: var(--cream);
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .nav-logo span { color: var(--gold); }
+    .nav-links {
+      display: flex;
+      gap: 2.5rem;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.7rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--off-white);
+      text-decoration: none;
+      opacity: 0.7;
+      transition: opacity 0.2s, color 0.2s;
+      cursor: pointer;
+    }
+    .nav-links a:hover,
+    .nav-links a.active { opacity: 1; color: var(--gold); }
+
+    /* hamburger */
+    .nav-burger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      z-index: 210;
+    }
+    .nav-burger span {
+      display: block;
+      width: 26px;
+      height: 1.5px;
+      background: var(--cream);
+      transition: all 0.3s;
+    }
+    .nav-burger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+    .nav-burger.open span:nth-child(2) { opacity: 0; }
+    .nav-burger.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+    .nav-mobile-menu {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(11,10,10,0.97);
+      z-index: 190;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3rem;
+    }
+    .nav-mobile-menu.open { display: flex; }
+    .nav-mobile-menu a {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 3rem;
+      letter-spacing: 0.1em;
+      color: var(--cream);
+      text-decoration: none;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .nav-mobile-menu a:hover { color: var(--gold); }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .nav-burger { display: flex; }
+    }
+
+    /* ── HERO ── */
+    #hero {
+      position: relative;
+      height: 100vh;
+      width: 100%;
+      overflow: hidden;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-start;
+    }
+
+    /* YouTube iframe background */
+    #yt-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    #yt-bg iframe {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      /* keep 16:9 and cover the viewport */
+      width: 177.78vh; /* 100vh * 16/9 */
+      height: 56.25vw; /* 100vw * 9/16 */
+      min-width: 100%;
+      min-height: 100%;
+      transform: translate(-50%, -50%);
+      border: none;
+      opacity: 0;
+      transition: opacity 2s ease;
+    }
+    #yt-bg iframe.loaded { opacity: 1; }
+
+    /* fallback gradient shown before/instead of video */
+    .hero-fallback {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, #1a1714 0%, #0d0c0b 50%, #1a1410 100%);
+      z-index: 0;
+    }
+
+    /* Cinematic letterbox */
+    #hero::before, #hero::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0;
+      height: 10vh;
+      background: var(--charcoal);
+      z-index: 3;
+    }
+    #hero::before { top: 0; }
+    #hero::after  { bottom: 0; }
+
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to top, rgba(8,7,7,0.95) 0%, rgba(8,7,7,0.35) 50%, rgba(8,7,7,0.2) 100%),
+        linear-gradient(to right, rgba(8,7,7,0.65) 0%, transparent 65%);
+      z-index: 1;
+    }
+
+    .grain {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      opacity: 0.06;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 180px;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 4;
+      padding: 0 6vw 14vh;
+      animation: fadeUp 1.8s cubic-bezier(0.16,1,0.3,1) 0.3s both;
+    }
+    .hero-eyebrow {
+      font-size: clamp(0.6rem, 1vw, 0.75rem);
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1rem;
+    }
+    .hero-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(4.5rem, 13vw, 11rem);
+      line-height: 0.9;
+      letter-spacing: 0.02em;
+      color: var(--cream);
+      text-shadow: 0 4px 40px rgba(0,0,0,0.6);
+    }
+    .hero-name em {
+      font-style: normal;
+      color: var(--gold);
+    }
+    .hero-role {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: clamp(1rem, 2.5vw, 1.6rem);
+      color: var(--off-white);
+      opacity: 0.75;
+      margin-top: 1rem;
+      letter-spacing: 0.05em;
+    }
+
+    .hero-cta {
+      display: inline-block;
+      margin-top: 2.5rem;
+      font-size: 0.65rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--cream);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(201,168,76,0.4);
+      padding-bottom: 4px;
+      transition: color 0.2s, border-color 0.2s;
+      cursor: pointer;
+    }
+    .hero-cta:hover { color: var(--gold); border-color: var(--gold); }
+
+    .scroll-hint {
+      position: absolute;
+      bottom: 12vh;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      opacity: 0.35;
+      animation: bounce 2.5s infinite;
+    }
+    .scroll-hint span {
+      font-size: 0.55rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+    }
+    .scroll-arrow {
+      width: 1px;
+      height: 36px;
+      background: linear-gradient(to bottom, var(--cream), transparent);
+    }
+
+    /* ── SECTION BASE ── */
+    section {
+      padding: 8rem 6vw;
+    }
+    .section-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.45em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1.5rem;
+    }
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2.8rem, 7vw, 6rem);
+      line-height: 1;
+      color: var(--cream);
+      margin-bottom: 2rem;
+    }
+
+    /* ── ABOUT ── */
+    #about {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6vw;
+      align-items: center;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .about-text p {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.05rem, 1.6vw, 1.3rem);
+      line-height: 1.9;
+      color: rgba(240,235,225,0.72);
+      margin-bottom: 1.4rem;
+    }
+    .about-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-top: 3rem;
+      padding-top: 2.5rem;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .stat-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 3rem;
+      color: var(--gold);
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--warm-grey);
+      margin-top: 0.35rem;
+    }
+
+    /* About visual side */
+    .about-visual {
+      position: relative;
+      aspect-ratio: 3/4;
+    }
+    .about-visual-frame {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(160deg, #1e1c1a 0%, #141210 100%);
+      border: 1px solid rgba(201,168,76,0.12);
+    }
+    .about-visual-accent {
+      position: absolute;
+      bottom: -20px;
+      right: -20px;
+      width: 60%;
+      height: 60%;
+      border: 1px solid rgba(201,168,76,0.2);
+      z-index: -1;
+    }
+    .about-visual-label {
+      position: absolute;
+      bottom: 2rem;
+      left: 2rem;
+      right: 2rem;
+    }
+    .about-visual-label p {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.2rem;
+      letter-spacing: 0.1em;
+      color: var(--cream);
+      opacity: 0.15;
+    }
+    /* camera icon centered */
+    .about-visual-icon {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.07;
+    }
+
+    @media (max-width: 768px) {
+      #about { grid-template-columns: 1fr; }
+      .about-visual { display: none; }
+    }
+
+    /* ── PORTFOLIO PAGE ── */
+    #portfolio-page {
+      padding-top: 10rem;
+      min-height: 100vh;
+    }
+    .portfolio-header {
+      padding: 0 6vw 5rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .portfolio-category {
+      padding: 5rem 6vw;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .portfolio-category:last-child { border-bottom: none; }
+    .category-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.45em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.75rem;
+    }
+    .category-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2rem, 5vw, 4rem);
+      color: var(--cream);
+      margin-bottom: 3rem;
+      line-height: 1;
+    }
+
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 520px), 1fr));
+      gap: 1.5rem;
+    }
+    .video-grid.single { grid-template-columns: 1fr; max-width: 820px; }
+
+    .video-wrapper {
+      position: relative;
+      padding-bottom: 56.25%;
+      background: #111;
+      overflow: hidden;
+    }
+    .video-wrapper iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .video-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .video-card-bar {
+      height: 2px;
+      background: linear-gradient(to right, var(--gold), transparent);
+    }
+
+    /* ── CONTACT PAGE ── */
+    #contact-page {
+      padding-top: 10rem;
+      min-height: 100vh;
+    }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6vw;
+      align-items: start;
+      padding: 0 6vw;
+    }
+    .contact-info p {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1rem, 1.5vw, 1.25rem);
+      line-height: 1.9;
+      color: rgba(240,235,225,0.65);
+      margin-bottom: 1.2rem;
+    }
+    .contact-detail {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+    }
+    .contact-detail-icon {
+      width: 36px;
+      height: 36px;
+      border: 1px solid rgba(201,168,76,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .contact-detail-icon svg { opacity: 0.6; }
+    .contact-detail-text {
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      color: var(--off-white);
+    }
+    .contact-detail-text a {
+      color: inherit;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .contact-detail-text a:hover { color: var(--gold); }
+
+    .contact-social {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 2.5rem;
+    }
+    .contact-social a {
+      font-size: 0.62rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--warm-grey);
+      text-decoration: none;
+      transition: color 0.2s;
+      border-bottom: 1px solid rgba(122,117,112,0.3);
+      padding-bottom: 3px;
+    }
+    .contact-social a:hover { color: var(--cream); border-color: var(--cream); }
+
+    /* Contact form */
+    .contact-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .form-field label {
+      font-size: 0.6rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+    .form-field input,
+    .form-field textarea {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--cream);
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 300;
+      font-size: 0.85rem;
+      padding: 1rem 1.2rem;
+      outline: none;
+      transition: border-color 0.2s;
+      resize: none;
+    }
+    .form-field input:focus,
+    .form-field textarea:focus { border-color: rgba(201,168,76,0.5); }
+    .form-field textarea { height: 160px; }
+    .form-submit {
+      display: inline-flex;
+      align-items: center;
+      gap: 1rem;
+      background: none;
+      border: 1px solid rgba(201,168,76,0.4);
+      color: var(--cream);
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      padding: 1rem 2.5rem;
+      cursor: pointer;
+      transition: background 0.25s, border-color 0.25s, color 0.25s;
+      align-self: flex-start;
+    }
+    .form-submit:hover {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: var(--charcoal);
+    }
+
+    @media (max-width: 768px) {
+      .contact-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 2rem 6vw;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    footer p {
+      font-size: 0.58rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--warm-grey);
+      opacity: 0.45;
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50%       { transform: translateX(-50%) translateY(8px); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.9s cubic-bezier(0.16,1,0.3,1), transform 0.9s cubic-bezier(0.16,1,0.3,1);
+    }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    /* stagger */
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+
+    /* gold line decoration */
+    .gold-line {
+      display: block;
+      width: 48px;
+      height: 1px;
+      background: var(--gold);
+      margin-bottom: 2rem;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav id="nav">
+    <a class="nav-logo" onclick="showPage('home')"><span>B</span>MINNAARD</a>
+    <ul class="nav-links">
+      <li><a onclick="showPage('home')" data-page="home">Home</a></li>
+      <li><a onclick="showPage('portfolio')" data-page="portfolio">Portfolio</a></li>
+      <li><a onclick="showPage('contact')" data-page="contact">Contact</a></li>
+    </ul>
+    <div class="nav-burger" id="burger" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </div>
+  </nav>
+
+  <!-- MOBILE MENU -->
+  <div class="nav-mobile-menu" id="mobileMenu">
+    <a onclick="showPage('home'); toggleMenu()">Home</a>
+    <a onclick="showPage('portfolio'); toggleMenu()">Portfolio</a>
+    <a onclick="showPage('contact'); toggleMenu()">Contact</a>
+  </div>
+
+  <!-- ══════════════ HOME PAGE ══════════════ -->
+  <div class="page active" id="page-home">
+
+    <!-- HERO -->
+    <section id="hero">
+      <div class="hero-fallback"></div>
+
+      <!-- YouTube background — muted autoplay via API params -->
+      <div id="yt-bg">
+        <iframe
+          id="yt-iframe"
+          src="https://www.youtube.com/embed/2IbK-5tSYFM?autoplay=1&mute=1&loop=1&playlist=2IbK-5tSYFM&controls=0&showinfo=0&rel=0&modestbranding=1&iv_load_policy=3&enablejsapi=1"
+          allow="autoplay; encrypted-media"
+          allowfullscreen
+        ></iframe>
+      </div>
+
+      <div class="grain"></div>
+      <div class="hero-overlay"></div>
+
+      <div class="hero-content">
+        <p class="hero-eyebrow">Cinematografie &amp; Filmregie</p>
+        <h1 class="hero-name">BRANDON<br><em>MINNAARD</em></h1>
+        <p class="hero-role">Filmmaker — Verhalen vertellen door de lens</p>
+        <a class="hero-cta" onclick="showPage('portfolio')">Bekijk mijn werk →</a>
+      </div>
+
+      <div class="scroll-hint">
+        <span>Scroll</span>
+        <div class="scroll-arrow"></div>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section id="about">
+      <div class="about-text reveal">
+        <span class="gold-line"></span>
+        <p class="section-label">Over mij</p>
+        <h2 class="section-title">Achter<br>de lens</h2>
+        <p>
+          Mijn naam is Brandon Minnaard, 22 jaar en gepassioneerd filmmaker.
+          Vanaf jongs af aan ben ik al bezig met film — het is een passie
+          die er vroeg in zat en nooit meer is weggegaan.
+        </p>
+        <p>
+          Via mijn middelbare school heb ik de fijne puntjes van het
+          filmmaken geleerd. Daarna heb ik een MBO-Niveau 4 opleiding tot
+          AV-Specialist afgerond en op dit moment studeer ik HBO Film en
+          Audiovisuele Media.
+        </p>
+        <p>
+          Van documentaire tot fictie, van opdrachtfilm tot korte film —
+          elk beeld wordt gemaakt met intentie, licht en respect
+          voor het verhaal dat verteld wordt.
+        </p>
+        <div class="about-stats">
+          <div>
+            <div class="stat-num">22</div>
+            <div class="stat-label">Jaar oud</div>
+          </div>
+          <div>
+            <div class="stat-num">HBO</div>
+            <div class="stat-label">Film &amp; AV Media</div>
+          </div>
+          <div>
+            <div class="stat-num">4+</div>
+            <div class="stat-label">Categorieën werk</div>
+          </div>
+          <div>
+            <div class="stat-num">∞</div>
+            <div class="stat-label">Frames vastgelegd</div>
+          </div>
+        </div>
+      </div>
+      <div class="about-visual reveal reveal-delay-2">
+        <div class="about-visual-frame">
+          <div class="about-visual-icon">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.7">
+              <rect x="2" y="7" width="15" height="10" rx="1"/>
+              <path d="M17 9l5-2v10l-5-2V9z"/>
+              <circle cx="9" cy="12" r="2"/>
+            </svg>
+          </div>
+          <div class="about-visual-label">
+            <p>BRANDON MINNAARD</p>
+            <p style="font-size:0.75rem;opacity:0.08;margin-top:0.25rem;font-family:'Montserrat',sans-serif;letter-spacing:0.2em;">ARKEL, NEDERLAND</p>
+          </div>
+        </div>
+        <div class="about-visual-accent"></div>
+      </div>
+    </section>
+
+    <!-- TEASER WORK -->
+    <section style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6rem; padding-bottom: 6rem;">
+      <div class="reveal" style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:2rem; margin-bottom:3rem;">
+        <div>
+          <span class="gold-line"></span>
+          <p class="section-label">Geselecteerd werk</p>
+          <h2 class="section-title">De reel</h2>
+        </div>
+        <a class="hero-cta" onclick="showPage('portfolio')" style="margin-top:0;">Volledig portfolio →</a>
+      </div>
+
+      <!-- Featured video -->
+      <div class="reveal reveal-delay-1" style="max-width:820px;">
+        <div class="video-card">
+          <div class="video-card-bar"></div>
+          <div class="video-wrapper">
+            <iframe src="https://www.youtube-nocookie.com/embed/2IbK-5tSYFM?controls=1&rel=0&modestbranding=1" allowfullscreen loading="lazy"></iframe>
+          </div>
+        </div>
+        <p style="font-size:0.6rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--warm-grey);margin-top:1rem;">Documentaire — uitgelicht werk</p>
+      </div>
+    </section>
+
+    <!-- CONTACT CTA STRIP -->
+    <section style="border-top: 1px solid rgba(255,255,255,0.06); text-align:center; padding: 7rem 6vw;">
+      <div class="reveal">
+        <p class="section-label">Samenwerken?</p>
+        <h2 style="font-family:'Bebas Neue',sans-serif; font-size:clamp(3rem,9vw,8rem); line-height:1; color:var(--cream); margin-bottom:1.5rem;">Laten we<br>schieten</h2>
+        <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(1rem,1.6vw,1.3rem);color:rgba(240,235,225,0.5);max-width:420px;margin:0 auto 3rem;line-height:1.8;">
+          Een project dat een scherp oog achter het glas nodig heeft? Neem contact op.
+        </p>
+        <a class="hero-cta" onclick="showPage('contact')">Stuur een bericht →</a>
+      </div>
+    </section>
+
+    <footer>
+      <p>© 2026 Brandon Minnaard</p>
+      <p>Filmmaker &amp; AV-Specialist — Arkel, Nederland</p>
+    </footer>
+  </div>
+
+  <!-- ══════════════ PORTFOLIO PAGE ══════════════ -->
+  <div class="page" id="page-portfolio">
+    <div id="portfolio-page">
+      <div class="portfolio-header reveal">
+        <span class="gold-line"></span>
+        <p class="section-label">Geselecteerd werk</p>
+        <h2 class="section-title" style="font-size:clamp(3rem,9vw,7rem);">Portfolio</h2>
+        <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(1rem,1.5vw,1.25rem);color:rgba(240,235,225,0.55);max-width:560px;line-height:1.9;margin-top:-0.5rem;">
+          Een selectie projecten waarbij ik betrokken ben geweest als cameraman, regisseur en AV-specialist.
+        </p>
+      </div>
+
+      <!-- DOCUMENTAIRE -->
+      <div class="portfolio-category reveal">
+        <p class="category-label">01 — Categorie</p>
+        <h3 class="category-title">Documentaire</h3>
+        <div class="video-grid">
+          <div class="video-card">
+            <div class="video-card-bar"></div>
+            <div class="video-wrapper">
+              <iframe src="https://www.youtube-nocookie.com/embed/2IbK-5tSYFM?controls=1&rel=0&modestbranding=1" allowfullscreen loading="lazy"></iframe>
+            </div>
+          </div>
+          <div class="video-card">
+            <div class="video-card-bar"></div>
+            <div class="video-wrapper">
+              <iframe src="https://www.youtube-nocookie.com/embed/RLk9qxIOsEU?controls=1&rel=0&modestbranding=1" allowfullscreen loading="lazy"></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OPDRACHTFILM -->
+      <div class="portfolio-category reveal">
+        <p class="category-label">02 — Categorie</p>
+        <h3 class="category-title">Opdrachtfilm</h3>
+        <div class="video-grid single">
+          <div class="video-card">
+            <div class="video-card-bar"></div>
+            <div class="video-wrapper">
+              <iframe src="https://www.youtube-nocookie.com/embed/Zjwt03FaVdA?controls=1&rel=0&modestbranding=1" allowfullscreen loading="lazy"></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FICTIE -->
+      <div class="portfolio-category reveal">
+        <p class="category-label">03 — Categorie</p>
+        <h3 class="category-title">Fictie</h3>
+        <div class="video-grid">
+          <div class="video-card">
+            <div class="video-card-bar"></div>
+            <div class="video-wrapper">
+              <iframe src="https://www.youtube-nocookie.com/embed/R1qxXgk8PZs?controls=1&rel=0&modestbranding=1" allowfullscreen loading="lazy"></iframe>
+            </div>
+          </div>
+          <div class="video-card">
+            <div class="video-card-bar"></div>
+            <div class="video-wrapper">
+              <iframe src="https://www.youtube-nocookie.com/embed/5J-u9JECTVg?controls=1&rel=0&modestbranding=1" allowfullscreen loading="lazy"></iframe>
+            </div>
+          </div>
+          <div class="video-card">
+            <div class="video-card-bar"></div>
+            <div class="video-wrapper">
+              <iframe src="https://www.youtube-nocookie.com/embed/-lizSJ7W9lM?controls=1&rel=0&modestbranding=1" allowfullscreen loading="lazy"></iframe>
+            </div>
+          </div>
+          <div class="video-card">
+            <div class="video-card-bar"></div>
+            <div class="video-wrapper">
+              <iframe src="https://www.youtube-nocookie.com/embed/PZYUMKDTZVE?controls=1&rel=0&modestbranding=1" allowfullscreen loading="lazy"></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>© 2026 Brandon Minnaard</p>
+      <p>Filmmaker &amp; AV-Specialist — Arkel, Nederland</p>
+    </footer>
+  </div>
+
+  <!-- ══════════════ CONTACT PAGE ══════════════ -->
+  <div class="page" id="page-contact">
+    <div id="contact-page">
+      <div style="padding: 0 6vw 5rem;" class="reveal">
+        <span class="gold-line"></span>
+        <p class="section-label">Neem contact op</p>
+        <h2 class="section-title" style="font-size:clamp(3rem,9vw,7rem);">Let's<br>Talk</h2>
+        <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(1rem,1.5vw,1.2rem);color:rgba(240,235,225,0.55);max-width:480px;line-height:1.9;margin-top:-0.5rem;">
+          Heb je een project waarbij je een scherp oog achter het glas nodig hebt? Stuur een bericht of neem direct contact op.
+        </p>
+      </div>
+
+      <div class="contact-grid">
+        <!-- Info -->
+        <div class="reveal">
+          <div class="contact-detail">
+            <div class="contact-detail-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            </div>
+            <div class="contact-detail-text">
+              <a href="mailto:brandonminnaard@gmail.com">brandonminnaard@gmail.com</a>
+            </div>
+          </div>
+          <div class="contact-detail">
+            <div class="contact-detail-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 012.18 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.15a16 16 0 006.94 6.94l1.51-1.51a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+            </div>
+            <div class="contact-detail-text">
+              <a href="tel:+31637307712">06 37 30 77 12</a>
+            </div>
+          </div>
+          <div class="contact-detail">
+            <div class="contact-detail-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+            <div class="contact-detail-text">Arkel, Nederland</div>
+          </div>
+
+          <div class="contact-social">
+            <a href="https://instagram.com/brandon.0183/" target="_blank">Instagram</a>
+            <a href="https://linkedin.com/in/brandon-minnaard-b22384204/" target="_blank">LinkedIn</a>
+          </div>
+        </div>
+
+        <!-- Form -->
+        <div class="reveal reveal-delay-2">
+          <div class="contact-form">
+            <div class="form-field">
+              <label for="name">Naam</label>
+              <input type="text" id="name" placeholder="Jouw naam" />
+            </div>
+            <div class="form-field">
+              <label for="email">E-mailadres</label>
+              <input type="email" id="email" placeholder="jouw@email.nl" />
+            </div>
+            <div class="form-field">
+              <label for="message">Bericht</label>
+              <textarea id="message" placeholder="Vertel over jouw project..."></textarea>
+            </div>
+            <button class="form-submit" onclick="handleFormSubmit()">
+              Verzenden
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+            <p id="form-msg" style="font-size:0.7rem;letter-spacing:0.2em;color:var(--gold);display:none;margin-top:-0.5rem;">Bericht verstuurd! Ik neem snel contact op.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer style="margin-top:6rem;">
+      <p>© 2026 Brandon Minnaard</p>
+      <p>Filmmaker &amp; AV-Specialist — Arkel, Nederland</p>
+    </footer>
+  </div>
+
+  <script>
+    // ── PAGE ROUTING ──
+    function showPage(name) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('page-' + name).classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+
+      // update nav active state
+      document.querySelectorAll('.nav-links a[data-page]').forEach(a => {
+        a.classList.toggle('active', a.dataset.page === name);
+      });
+
+      // trigger reveals on the newly shown page
+      requestAnimationFrame(() => initReveals());
+    }
+
+    // ── NAV SCROLL ──
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 60);
+    });
+
+    // ── MOBILE MENU ──
+    function toggleMenu() {
+      const burger = document.getElementById('burger');
+      const menu = document.getElementById('mobileMenu');
+      burger.classList.toggle('open');
+      menu.classList.toggle('open');
+    }
+
+    // ── SCROLL REVEAL ──
+    function initReveals() {
+      const els = document.querySelectorAll('.page.active .reveal:not(.visible)');
+      const obs = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+          if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }
+        });
+      }, { threshold: 0.1 });
+      els.forEach(el => obs.observe(el));
+    }
+    initReveals();
+
+    // ── YOUTUBE FADE IN ──
+    const ytIframe = document.getElementById('yt-iframe');
+    if (ytIframe) {
+      ytIframe.addEventListener('load', () => {
+        setTimeout(() => ytIframe.classList.add('loaded'), 800);
+      });
+    }
+
+    // ── FORM SUBMIT (front-end only) ──
+    function handleFormSubmit() {
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const message = document.getElementById('message').value.trim();
+      if (!name || !email || !message) return;
+
+      // Open mailto as fallback (no server)
+      const mailto = `mailto:brandonminnaard@gmail.com?subject=Projectaanvraag van ${encodeURIComponent(name)}&body=${encodeURIComponent(message)}%0A%0AVan: ${encodeURIComponent(email)}`;
+      window.location.href = mailto;
+
+      document.getElementById('form-msg').style.display = 'block';
+    }
+  </script>
+</body>
+</html>
